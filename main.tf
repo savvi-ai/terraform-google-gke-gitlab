@@ -388,6 +388,11 @@ data "helm_repository" "gitlab" {
   url  = "https://charts.gitlab.io"
 }
 
+data "helm_repository" "bitnami" {
+  name = "bitnami"
+  url  = "https://charts.bitnami.com/bitnami"
+}
+
 locals {
   gitlab_address = google_compute_address.gitlab.address
   domain         = var.domain
@@ -415,11 +420,13 @@ resource "null_resource" "sleep_for_cluster_fix_helm_6361" {
 }
 
 resource "helm_release" "gitlab_external_dns" {
-  provider  = helm.gke_gitlab
-  name      = "dns"
-  chart     = "stable/external-dns"
-  version   = "2.1.2"
-  namespace = "kube-system"
+  provider = helm.gke_gitlab
+
+  name       = "dns"
+  repository = data.helm_repository.bitnami.name
+  chart      = "external-dns"
+  version    = "2.1.2"
+  namespace  = "kube-system"
 
   set {
     name  = "provider"
