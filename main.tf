@@ -414,13 +414,40 @@ resource "null_resource" "sleep_for_cluster_fix_helm_6361" {
   depends_on = [google_container_cluster.gitlab]
 }
 
+resource "helm_release" "gitlab_external_dns" {
+  provider  = helm.gke_gitlab
+  name      = "dns"
+  chart     = "stable/external-dns"
+  version   = "2.1.2"
+  namespace = "kube-system"
+
+  set {
+    name  = "provider"
+    value = "google"
+  }
+
+  set {
+    name  = "google.project"
+    value = var.project_id
+  }
+
+  set {
+    name  = "policy"
+    value = "sync"
+  }
+
+  depends_on = [
+    null_resource.sleep_for_cluster_fix_helm_6361,
+  ]
+}
+
 resource "helm_release" "gitlab" {
   provider = helm.gke_gitlab
 
   name       = "gitlab"
   repository = data.helm_repository.gitlab.name
   chart      = "gitlab"
-  version    = "2.3.7"
+  version    = "3.2.2"
   timeout    = 600
 
   values = [data.template_file.helm_values.rendered]
